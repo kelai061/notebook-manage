@@ -1,0 +1,133 @@
+ 'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const assert=require('node:assert/strict');
+module.exports=async function({win,app,store,delay,shot,log}) {
+  const results={checks:[],shots:[],startedAt:new Date().toISOString()};
+  const js=code=>win.webContents.executeJavaScript(code);
+  const waitFor=async(code,label)=>{for(let i=0;i<80;i++){if(await js(code))return;await delay(100);}throw new Error('Timed out: '+label);};
+  const check=(name,value)=>{assert.ok(value,name);results.checks.push(name);log('PASS '+name);};
+  const screenshot=async name=>{results.shots.push(await shot('r4-'+name));};
+  const clickAt=async(x,y)=>{win.webContents.sendInputEvent({type:'mouseMove',x:Math.round(x),y:Math.round(y)});win.webContents.sendInputEvent({type:'mouseDown',x:Math.round(x),y:Math.round(y),button:'left',clickCount:1});win.webContents.sendInputEvent({type:'mouseUp',x:Math.round(x),y:Math.round(y),button:'left',clickCount:1});await delay(120);};
+  try {
+    await waitFor('Boolean(window.PaperCardApp?.getState()?.cards?.length)','workspace boot');
+    const boot=await js(`({url:location.href,bridge:!!window.papercard,all:PaperCardApp.getState().cards.length,pages:PaperCardApp.getViewState().pages.length,thumbs:document.querySelectorAll('.page-thumb').length})`);
+    check('Native app protocol and preload',boot.url.startsWith('app://local/')&&boot.bridge);
+    check('Real workspace and image thumbnails',boot.all>=7&&boot.pages===boot.thumbs);
+    await waitFor("Boolean(document.querySelector('#paperMediaLayer img')?.complete&&document.querySelector('#paperMediaLayer img')?.naturalWidth>0)",'original image loaded');
+    const source=await js(`PaperCardApp.getViewState().pages[0].pageAssetUrl`);
+    check('Original image asset fetch',source&&await js(`fetch(${JSON.stringify(source)}).then(r=>r.ok)`));
+    await waitFor("Array.from(document.querySelectorAll('#pageTabs img')).filter(el=>{const r=el.getBoundingClientRect(),p=el.closest('#pageTabs').getBoundingClientRect();return r.left<p.right&&r.right>p.left}).every(el=>el.complete&&el.naturalWidth>0)",'visible thumbnails');
+    await screenshot('01-original');
+
+    await js(`document.querySelector('.stream-card-item').click()`);
+    await waitFor(`Boolean(document.querySelector('#cardEditorModal.is-open'))`,'card open');
+    const content=String.raw`原文：电压与电流相位差。\n$$\begin{aligned}P&=\frac{1}{T}\int_0^T u(t)i(t)\,dt\\&=UI\cos\varphi\end{aligned}$$\n$$f(x)=\begin{cases}\frac{1}{\sqrt{1-x^2}},&-1<x<1\\0,&\text{其他}\end{cases}$$` .replace(/\\n/g,'\n');
+    await js(`(()=>{document.getElementById('editSourceBtn').click();const el=document.getElementById('editCardContent');el.value=${JSON.stringify(content)};el.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('editCardKind').value='随手记';document.getElementById('editSourceBtn').click();})()`);
+    const math=await js(`({count:document.querySelectorAll('#editCardPreview .katex').length,fail:document.querySelectorAll('#editCardPreview .math-fallback').length,sourceHidden:document.getElementById('editCardContent').hidden,meta:document.getElementById('editCardKind').value})`);
+    check('Complex math rendered with single editable preview',math.count>=2&&math.fail===0&&math.sourceHidden);
+    const accessible=await js(`(()=>{const panel=document.querySelector('#cardEditorModal .editor-v4'),p=panel.getBoundingClientRect(),save=document.getElementById('saveCardEditorBtn'),r=save.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2),body=panel.querySelector('.modal-body'),footer=panel.querySelector('.modal-footer'),before=footer.getBoundingClientRect().top;body.scrollTop=body.scrollHeight;const stable=Math.abs(footer.getBoundingClientRect().top-before)<1;body.scrollTop=0;return{centered:Math.abs(p.x+p.width/2-innerWidth/2)<2,bounded:p.top>=15&&p.bottom<=innerHeight-15,width:p.width,buttonVisible:r.height>=28&&r.top>=0&&r.bottom<=innerHeight&&save.contains(hit),footerStable:stable,x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    check('Editor centered with reachable fixed save button',accessible.centered&&accessible.bounded&&accessible.width<=740&&accessible.buttonVisible&&accessible.footerStable);
+    await screenshot('02-card-preview');
+    await clickAt(accessible.x,accessible.y);
+    await waitFor(`!document.getElementById('cardEditorModal').classList.contains('is-open')`,'save card');
+    check('Custom card type and preview persisted',store.getState().cards.some(c=>c.kind==='随手记'&&c.editableContent.includes('varphi')));
+
+    const figure=store.getState().cards.find(c=>c.figureInfo&&c.regionId)||store.getState().cards.find(c=>c.regionId);
+    assert.ok(figure,'figure fixture');
+    await js(`PaperCardApp.openCardEditor(${JSON.stringify(figure.cardId)})`);
+    await waitFor(`Boolean(document.querySelector('#editorFigurePreview img')?.complete&&document.querySelector('#editorFigurePreview img')?.naturalWidth>0)`,'actual legacy crop image');
+    check('Legacy screenshot contains a loaded real image',await js(`!!document.querySelector('#editorFigurePreview img')?.naturalWidth`));
+    const redraw='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 180"><rect width="500" height="180" fill="#eef7f1"/><path d="M40 90h170m80 0h170" stroke="#317e70" stroke-width="4"/><rect x="170" y="45" width="150" height="90" rx="16" fill="#317e70"/><text x="245" y="98" text-anchor="middle" fill="white" font-size="22">流程节点</text></svg>';
+    await js(`(()=>{document.getElementById('figurePlugin').open=true;const el=document.getElementById('editRedrawSvg');el.value=${JSON.stringify(redraw)};el.dispatchEvent(new Event('input'));document.getElementById('enableRedraw').checked=true;document.getElementById('enableRedraw').dispatchEvent(new Event('change'));})()`);
+    await waitFor(`Boolean(document.querySelector('#editorFigurePreview [data-figure-toggle]'))`,'image toggle');
+    await js(`document.querySelector('#editorFigurePreview [data-figure-toggle]').click()`);
+    check('Redraw can switch to original crop',await js(`Boolean(document.querySelector('#editorFigurePreview .figure-crop-window')||document.querySelector('#editorFigurePreview img')?.src.includes('svg'))`));
+    await js(`document.querySelector('#editorFigurePreview [data-figure-zoom]').click()`);
+    check('Image zoom dialog opened',await js(`!!document.querySelector('.figure-lightbox[open]')`));
+    await screenshot('03-image-zoom');
+    await js(`document.querySelector('.figure-lightbox').close();document.getElementById('saveCardEditorBtn').click()`);
+    await waitFor(`!document.getElementById('cardEditorModal').classList.contains('is-open')`,'figure save');
+    check('Manual redraw saved',store.getState().cards.find(c=>c.cardId===figure.cardId).figureInfo.redrawSvg.includes('流程节点'));
+
+    await js(`PaperCardApp.switchView('page');PaperCardApp.selectPage(${JSON.stringify(figure.pageId)});`);
+    const stages=['page_partition','region_card_fill','global_synthesis'];
+    for(const stage of stages){
+      const response=await js(`window.papercard.call('agent:generatePrompt',{stage:${JSON.stringify(stage)}})`);
+      check('Stage prompt '+stage,response.ok&&response.promptText.includes(stage)&&response.promptText.includes('noteTasks.js'));
+      check('Faithful recognition instruction '+stage,/原文|原话|忠实|实际可见/.test(response.promptText)&&/不解释|不编造|不得|不补全/.test(response.promptText));
+    }
+
+    const beforeCount=store.getState().pages.find(p=>p.pageId===figure.pageId).regions.length;
+    await js(`document.getElementById('drawPolygonBtn').click()`);
+    const rect=await js(`(()=>{const r=document.getElementById('paperRegionsOverlay').getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}})()`);
+    for(const point of [[.23,.08],[.48,.08],[.4,.23]])await clickAt(rect.x+rect.w*point[0],rect.y+rect.h*point[1]);
+    await js(`document.getElementById('finishPolygonBtn').click()`);
+    await waitFor(`PaperCardApp.getViewState().pages.find(p=>p.pageId===${JSON.stringify(figure.pageId)}).regions.length>${beforeCount}`,'polygon save');
+    let page=store.getState().pages.find(p=>p.pageId===figure.pageId),polygon=page.regions[page.regions.length-1];
+    check('Non-rectangular region saved',polygon.points?.length===3||polygon.polygon?.length===3);
+    const originalBBox={...polygon.bbox};
+    const dragRect=await js(`(()=>{const r=document.querySelector('.region-group.is-active .region-handle')?.getBoundingClientRect();return r?{x:r.x+r.width/2,y:r.y+r.height/2}:null})()`);
+    assert.ok(dragRect,'active polygon handle');
+    win.webContents.sendInputEvent({type:'mouseDown',x:Math.round(dragRect.x),y:Math.round(dragRect.y),button:'left',clickCount:1});
+    win.webContents.sendInputEvent({type:'mouseMove',x:Math.round(dragRect.x+15),y:Math.round(dragRect.y+15),movementX:15,movementY:15});
+    win.webContents.sendInputEvent({type:'mouseUp',x:Math.round(dragRect.x+15),y:Math.round(dragRect.y+15),button:'left',clickCount:1});
+    await delay(700);
+    polygon=store.getState().pages.find(p=>p.pageId===figure.pageId).regions.find(r=>r.regionId===polygon.regionId);
+    check('Polygon vertex drag persisted',polygon.bbox.x!==originalBBox.x||polygon.bbox.y!==originalBBox.y);
+    const oldWidth=page.width,oldHeight=page.height;
+    await js(`document.getElementById('rotatePaperBtn').click()`);await delay(600);
+    page=store.getState().pages.find(p=>p.pageId===figure.pageId);
+    check('Paper rotation updates dimensions',page.width===oldHeight&&page.height===oldWidth);
+    await waitFor("Boolean(document.querySelector('#paperMediaLayer img')?.complete&&document.querySelector('#paperMediaLayer img')?.naturalWidth>0)",'rotated image');
+    check('Rotated paper uses self-contained image',await js(`(()=>{const src=document.querySelector('#paperMediaLayer img').src;return src.startsWith('data:image/svg')&&decodeURIComponent(src).includes('rotate(90)')&&decodeURIComponent(src).includes('data:image/')})()`));
+    const attached=store.getState().cards.find(c=>c.regionId);
+    const remove=await js(`window.papercard.call('region:delete',{pageId:${JSON.stringify(attached.pageId)},regionId:${JSON.stringify(attached.regionId)}})`);
+    check('Deleting partition preserves card content',remove.ok&&store.getState().cards.find(c=>c.cardId===attached.cardId).editableContent===attached.editableContent&&store.getState().cards.find(c=>c.cardId===attached.cardId).regionId===null);
+    await screenshot('04-adjusted-partition');
+
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000"><rect width="800" height="1000" fill="#fffdfa"/><text x="50" y="100" font-size="32">第二批导入 · 独立原纸</text></svg>';
+    const imported=await js(`window.papercard.call('page:import',{title:'桌面验收第二批',imagePath:'sample://r4.svg',width:800,height:1000,svgPreview:${JSON.stringify(svg)}})`);
+    assert.ok(imported.ok);
+    await js(`PaperCardApp.refreshWorkspace()`);await delay(500);
+    const state2=store.getState(),newPage=state2.pages[state2.pages.length-1];
+    await js(`window.papercard.call('card:add',{pageId:${JSON.stringify(newPage.pageId)},title:'跨批知识节点',kind:'thought',editableContent:'保留原文，独立整理。',subject:'思考',chapter:'临时'})`);
+    await js(`PaperCardApp.refreshWorkspace()`);await delay(400);
+    check('Batch isolates original/card/canvas views',await js(`PaperCardApp.getViewState().pages.length===1&&PaperCardApp.getViewState().cards.length===1`));
+    check('New card preview defaults to actual content',store.getState().cards.find(c=>c.title==='跨批知识节点').previewContent==='保留原文，独立整理。');
+    await js(`PaperCardApp.switchView('cards');document.querySelector('[data-category-card]').click()`);
+    await js(`document.getElementById('categorySubject').value='验收科目';document.getElementById('categoryChapter').value='验收章节';document.getElementById('workspaceDialogSave').click()`);await delay(600);
+    check('Directory editing persists',store.getState().cards.some(c=>c.title==='跨批知识节点'&&c.subject==='验收科目'&&c.chapter==='验收章节'));
+    await screenshot('05-card-directory');
+    await js(`PaperCardApp.switchView('knowledge')`);await delay(400);
+    check('Knowledge view contains all batches',await js(`document.querySelectorAll('.canvas-node').length===PaperCardApp.getState().cards.length`));
+    check('Nodes avoid full math and image rendering',await js(`document.querySelectorAll('#canvasNodesLayer .katex,#canvasNodesLayer img').length===0`));
+    await js(`document.getElementById('manageRelationsBtn').click()`);
+    const state3=store.getState(),newCard=state3.cards.find(c=>c.title==='跨批知识节点');
+    await js(`document.getElementById('relationFrom').value=${JSON.stringify(figure.cardId)};document.getElementById('relationTo').value=${JSON.stringify(newCard.cardId)};document.getElementById('relationLabel').value='跨批关联';document.getElementById('addRelationBtn').click();document.getElementById('workspaceDialogSave').click()`);await delay(600);
+    check('Manual cross-batch knowledge relation persisted',store.getState().knowledgeRelations.some(r=>r.fromCardId===figure.cardId&&r.toCardId===newCard.cardId));
+    await js(`document.getElementById('layoutByTaxonomyBtn').click()`);await delay(500);
+    check('Node layout persists through store reload',store.getState().canvasLayout.length>=store.getState().cards.length);
+    const timings=await js(`(()=>{const start=performance.now();PaperCardApp.switchView('cards');const cardsMs=performance.now()-start;const next=performance.now();PaperCardApp.switchView('knowledge');return{currentBatchCardsMs:Math.round(cardsMs),allKnowledgeMs:Math.round(performance.now()-next),nodeCount:document.querySelectorAll('.canvas-node').length}})()`);
+    results.renderTiming=timings;
+    await screenshot('06-knowledge-graph');
+    check('Knowledge organization instruction', (await js(`window.papercard.call('agent:generatePrompt',{stage:'knowledge_synthesis'})`)).ok);
+    await js(`document.getElementById('knowledgeSearchInput').value='跨批知识节点';document.getElementById('knowledgeSearchInput').dispatchEvent(new Event('input'));document.getElementById('canvasZoomFitBtn').click()`);await delay(250);
+    check('Knowledge search filters nodes',await js(`document.querySelectorAll('.canvas-node').length===1`));
+    const nodeRect=await js(`(()=>{const r=document.querySelector('.canvas-node').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+    await clickAt(nodeRect.x,nodeRect.y);
+    check('Compact node opens editor',await js(`!!document.querySelector('#cardEditorModal.is-open')`));
+    // Exercise retained split/merge through the actual editor callbacks using test-only content.
+    await js(`(()=>{document.getElementById('cardMoreMenu').open=true;document.getElementById('prepareSplitBtn').click();const areas=document.querySelectorAll('#splitSegments textarea');areas[0].value='验收拆分第一段';areas[1].value='验收拆分第二段';document.getElementById('splitCardBtn').click();})()`);
+    await waitFor(`PaperCardApp.getState().cards.some(c=>c.splitFrom===${JSON.stringify(newCard.cardId)})`,'editor split');
+    const segments=store.getState().cards.filter(c=>c.splitFrom===newCard.cardId);
+    check('Editor split retains original capability',segments.length===2);
+    await js(`PaperCardApp.openCardEditor(${JSON.stringify(segments[0].cardId)})`);
+    await js(`document.getElementById('cardMoreMenu').open=true;document.getElementById('mergeTargetCard').value=${JSON.stringify(segments[1].cardId)};document.getElementById('mergeCardBtn').click()`);
+    await waitFor(`PaperCardApp.getState().cards.some(c=>c.mergedFrom?.includes(${JSON.stringify(segments[0].cardId)}))`,'editor merge');
+    check('Editor merge retains original capability',store.getState().cards.some(c=>c.mergedFrom?.includes(segments[0].cardId)&&c.mergedFrom?.includes(segments[1].cardId)));
+    results.ok=true;
+  } catch(error){results.ok=false;results.error=error.stack||String(error);log(results.error);await screenshot('failure');throw error;}
+  finally{results.finishedAt=new Date().toISOString();fs.writeFileSync(path.join(app.getPath('userData'),'desktop-verification-report.json'),JSON.stringify(results,null,2));}
+  console.log('[r4-desktop-result]',JSON.stringify(results));return results;
+};

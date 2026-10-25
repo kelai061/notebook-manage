@@ -1,0 +1,36 @@
+# 用户私有数据与手写原图严禁上传
+workspace/*
+!workspace/pages/
+!workspace/crops/
+!workspace/agent-tasks/
+!workspace/workspace-state.template.json
+workspace/pages/*
+!workspace/pages/.gitkeep
+workspace/crops/*
+!workspace/crops/.gitkeep
+workspace/agent-tasks/*
+!workspace/agent-tasks/.gitkeep
+workspace/*.backup*.json
+workspace/*.bak*.json
+workspace/workspace-state.json
+workspace-state.json
+
+# 历史迭代与验证留档（包含手写笔记快照与隐私照片）
+docs/r*-backup/
+docs/r*-verification/
+docs/r*-handoff/
+docs/shots/
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/workspace-state*.json
+
+# 安装包产物与本地运行时缓存
+dist/*.exe
+dist/*.zip
+dist/
+release/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

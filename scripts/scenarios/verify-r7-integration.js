@@ -1,0 +1,25 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {execFileSync}=require('node:child_process');
+module.exports=async({win,store,delay,shot})=>{
+ const checks=[];
+ const renderer=code=>win.webContents.executeJavaScript(code);
+ const wait=async(code,label)=>{for(let n=0;n<100;n++){if(await renderer(code))return;await delay(50);}throw Error(label);};
+ await wait('window.PaperCardApp?.getState().cards.length===2','fixture not loaded');
+ const media=await renderer(`(async()=>{const page=window.PaperCardApp.getState().pages[0];const [t,p,o]=await Promise.all(['thumbnail','preview','original'].map(variant=>window.papercard.call('image:get',{pageId:page.pageId,variant})));if(!t.ok||!p.ok||!o.ok)throw Error(JSON.stringify([t,p,o]));return {thumbnail:t.image,preview:p.image,original:o.image};})()`);
+ assert.equal(media.thumbnail.width,256);assert.equal(media.preview.width,1280);assert.match(media.original.url,/pages/);checks.push('sandbox image IPC: 256 thumbnail / 1280 preview / on-demand original');
+ await wait("[...document.querySelectorAll('#paperMediaLayer img')].some(i=>i.naturalWidth>0)",'page preview not decoded');
+ await renderer(`(async()=>{const {figureSources}=await import('./js/media.js');const f={cardId:'vector-test',figureInfo:{vectorPreviewPath:'app://local/crops/vector-only.svg'}};if(!figureSources(f).redraw)throw Error('vectorPreviewPath missing');f.figureInfo={redrawDataPath:'app://local/crops/bitmap.png'};if(!figureSources(f).redraw)throw Error('redrawDataPath missing');const {getPageMedia}=await import('./js/pageMedia.js');const page=window.PaperCardApp.getState().pages.find(p=>!p.pageAssetUrl);const fallback=await getPageMedia(page);const img=new Image();img.src=fallback.url;await img.decode();if(!img.naturalWidth)throw Error('SVG fallback blank');})()`);
+ checks.push('path-only SVG fallback and vector/bitmap figure paths');
+ const card=store.getState().cards[0],oldPath=card.figureInfo.redrawPath;
+ await renderer(`window.PaperCardApp.openCardEditor(${JSON.stringify(card.cardId)});document.getElementById('addFigureBtn').click()`);
+ await wait("document.getElementById('editRedrawSvg').value.includes('<rect')",'external SVG source not editable');
+ await renderer(`(()=>{const el=document.getElementById('editRedrawSvg');el.value=el.value.replace('blue','green');el.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('saveCardEditorBtn').click();})()`);
+ await wait(`window.PaperCardApp.getState().cards[0].figureInfo.redrawPath!==${JSON.stringify(oldPath)}`,'edited SVG path did not update');
+ assert.equal(store.getState().cards[0].editableContent,'原正文 x²');checks.push('external SVG opens for editing and saves a new asset without changing body');
+ const nodeExe=process.env.PAPERCARD_VERIFY_NODE;
+ execFileSync(nodeExe,['-e',`const {createWorkspaceStore}=require(${JSON.stringify(path.join(__dirname,'../../src/main/store.js'))});const s=createWorkspaceStore(process.argv[1]);s.renameBatch({batchId:s.getState().activeBatchId,title:'外部进程同步成功'});`,store.rootDir],{windowsHide:true});
+ await wait("document.getElementById('batchSelect').selectedOptions[0].textContent==='外部进程同步成功'",'external write did not reach renderer');checks.push('external process atomic save reaches renderer without manual refresh');
+ const topic=await require('./verify-r7-topic-ui')({win,delay,shot});assert.equal(topic.ok,true);assert.equal(topic.crossBatch,true);checks.push('batch naming, empty-topic opens, cross-batch members, independent layout and topic rename');
+ await shot('r7-integration');
+ return {ok:true,checks,media,topic};
+};

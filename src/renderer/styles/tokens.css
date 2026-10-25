@@ -1,0 +1,276 @@
+/* ============================================================
+   tokens.css — Minimalist M3 Glass & Warm Paper Design Tokens
+   标杆对齐：SkillAtelier (tokens.css & glass.css)
+   Material Design 3 语义色彩角色 · 冰川毛玻璃 · 形状刻度 · 动效
+   ============================================================ */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* ---------- Material Design 3 色彩角色 · 冰川纸墨 (Light) ---------- */
+  --md-primary: #006b76;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #c6eff0;
+  --md-on-primary-container: #003b43;
+
+  --md-secondary: #4a6574;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #e0eef5;
+  --md-on-secondary-container: #183946;
+
+  --md-tertiary: #376b60;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #ccece0;
+  --md-on-tertiary-container: #123d33;
+
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #410002;
+
+  --md-success: #2e6c38;
+  --md-on-success: #ffffff;
+  --md-success-container: #c4f1c9;
+  --md-on-success-container: #002107;
+
+  --md-warning: #7c5800;
+  --md-on-warning: #ffffff;
+  --md-warning-container: #ffdea2;
+  --md-on-warning-container: #271900;
+
+  --md-surface: #f4f9fc;
+  --md-surface-dim: #dde9ef;
+  --md-surface-bright: #f8fcff;
+  --md-on-surface: #172f40;
+  --md-surface-variant: #e1ecf2;
+  --md-on-surface-variant: #4c6577;
+
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #edf5fa;
+  --md-surface-container: #e8f1f7;
+  --md-surface-container-high: #dfedf4;
+  --md-surface-container-highest: #d5e6ee;
+
+  --md-outline: #708794;
+  --md-outline-variant: #c8dce6;
+
+  --md-inverse-surface: #2b353b;
+  --md-inverse-on-surface: #eff4f8;
+  --md-inverse-primary: #7ad9df;
+
+  --md-scrim: rgba(15, 30, 42, 0.42);
+
+  /* ---------- 冰川毛玻璃设计令牌 (SkillAtelier Glass Tokens) ---------- */
+  --glass-surface: rgba(255, 255, 255, 0.72);
+  --glass-surface-elevated: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-border-subtle: rgba(200, 220, 230, 0.55);
+  --glass-shadow: 0 10px 34px rgba(42, 91, 116, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glass-shadow-hover: 0 16px 40px rgba(42, 91, 116, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-blur: blur(16px) saturate(180%);
+
+  /* ---------- 形状刻度 (M3 Shapes) ---------- */
+  --shape-xs: 4px;
+  --shape-sm: 8px;
+  --shape-md: 12px;
+  --shape-lg: 16px;
+  --shape-xl: 20px;
+  --shape-2xl: 24px;
+  --shape-full: 999px;
+
+  /* ---------- 高度与投影 (M3 Elevations) ---------- */
+  --elev-0: none;
+  --elev-1: 0 1px 3px rgba(15, 35, 50, 0.08), 0 1px 2px rgba(15, 35, 50, 0.05);
+  --elev-2: 0 3px 8px rgba(15, 35, 50, 0.09), 0 1px 3px rgba(15, 35, 50, 0.06);
+  --elev-3: 0 8px 24px rgba(15, 35, 50, 0.11), 0 2px 6px rgba(15, 35, 50, 0.06);
+  --elev-4: 0 14px 36px rgba(15, 35, 50, 0.14), 0 4px 10px rgba(15, 35, 50, 0.08);
+  --elev-5: 0 20px 48px rgba(15, 35, 50, 0.18), 0 6px 14px rgba(15, 35, 50, 0.10);
+
+  /* ---------- 动效曲线与持续时间 (M3 Transitions) ---------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-accel: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dur-short: 120ms;
+  --dur-med: 220ms;
+  --dur-long: 360ms;
+
+  /* ---------- 字体刻度 ---------- */
+  --font-plain: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, monospace;
+
+  --type-display-s: 400 32px/40px var(--font-display);
+  --type-headline-s: 500 22px/28px var(--font-display);
+  --type-title-l: 500 18px/24px var(--font-display);
+  --type-title-m: 500 15px/22px var(--font-plain);
+  --type-title-s: 500 13px/18px var(--font-plain);
+  --type-body-l: 400 15px/22px var(--font-plain);
+  --type-body-m: 400 13.5px/20px var(--font-plain);
+  --type-body-s: 400 12px/16px var(--font-plain);
+  --type-label-l: 500 13.5px/18px var(--font-plain);
+  --type-label-m: 500 12px/16px var(--font-plain);
+  --type-label-s: 500 11px/14px var(--font-plain);
+
+  /* ---------- 布局尺寸 ---------- */
+  --rail-w: 92px;
+  --appbar-h: 64px;
+  --taxonomy-w: 240px;
+
+  /* ---------- 卡片与分区专属语义色 (Refined Types) ---------- */
+  --type-problem-fg: #005bb5;
+  --type-problem-bg: rgba(0, 91, 181, 0.08);
+  --type-problem-border: rgba(0, 91, 181, 0.25);
+  --type-problem-badge: #005bb5;
+
+  --type-process-fg: #006b76;
+  --type-process-bg: rgba(0, 107, 118, 0.08);
+  --type-process-border: rgba(0, 107, 118, 0.25);
+  --type-process-badge: #006b76;
+
+  --type-keystep-fg: #a25200;
+  --type-keystep-bg: rgba(162, 82, 0, 0.09);
+  --type-keystep-border: rgba(162, 82, 0, 0.35);
+  --type-keystep-badge: #a25200;
+
+  --type-figure-fg: #603a9b;
+  --type-figure-bg: rgba(96, 58, 155, 0.08);
+  --type-figure-border: rgba(96, 58, 155, 0.25);
+  --type-figure-badge: #603a9b;
+
+  --type-thought-fg: #236854;
+  --type-thought-bg: rgba(35, 104, 84, 0.08);
+  --type-thought-border: rgba(35, 104, 84, 0.25);
+  --type-thought-badge: #236854;
+
+  --type-article-fg: #505c6c;
+  --type-article-bg: rgba(80, 92, 108, 0.08);
+  --type-article-border: rgba(80, 92, 108, 0.25);
+  --type-article-badge: #505c6c;
+
+  /* ---------- 历史兼容映射 ---------- */
+  --bg-app: var(--md-surface);
+  --bg-stage: var(--md-surface-bright);
+  --bg-surface: var(--glass-surface);
+  --bg-surface-elevated: var(--glass-surface-elevated);
+  --ink-primary: var(--md-on-surface);
+  --ink-secondary: var(--md-on-surface-variant);
+  --ink-border: var(--md-outline-variant);
+  --primary-accent: var(--md-primary);
+}
+
+/* ============================================================
+   深色模式 · 研墨冰川毛玻璃 (Dark)
+   ============================================================ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --md-primary: #7ad9df;
+  --md-on-primary: #00363d;
+  --md-primary-container: #124b55;
+  --md-on-primary-container: #c6f5f5;
+
+  --md-secondary: #afc9da;
+  --md-on-secondary: #183344;
+  --md-secondary-container: #243f53;
+  --md-on-secondary-container: #d9eaf5;
+
+  --md-tertiary: #9ed8c5;
+  --md-on-tertiary: #04372c;
+  --md-tertiary-container: #284d42;
+  --md-on-tertiary-container: #d0f2e5;
+
+  --md-error: #ffb4ab;
+  --md-on-error: #690005;
+  --md-error-container: #93000a;
+  --md-on-error-container: #ffdad6;
+
+  --md-success: #8cd696;
+  --md-on-success: #003912;
+  --md-success-container: #135222;
+  --md-on-success-container: #c4f1c9;
+
+  --md-warning: #f8bd48;
+  --md-on-warning: #422c00;
+  --md-warning-container: #5e4100;
+  --md-on-warning-container: #ffdea2;
+
+  --md-surface: #0c1824;
+  --md-surface-dim: #09141f;
+  --md-surface-bright: #304456;
+  --md-on-surface: #e0edf5;
+  --md-surface-variant: #344b5e;
+  --md-on-surface-variant: #b0c5d5;
+
+  --md-surface-container-lowest: #09131e;
+  --md-surface-container-low: #102130;
+  --md-surface-container: #142737;
+  --md-surface-container-high: #1b3042;
+  --md-surface-container-highest: #263e51;
+
+  --md-outline: #829eaf;
+  --md-outline-variant: #314d60;
+
+  --md-inverse-surface: #e0edf5;
+  --md-inverse-on-surface: #172f40;
+  --md-inverse-primary: #006b76;
+
+  --md-scrim: rgba(0, 0, 0, 0.65);
+
+  --glass-surface: rgba(18, 38, 54, 0.88);
+  --glass-surface-elevated: rgba(26, 48, 66, 0.95);
+  --glass-border: rgba(142, 203, 220, 0.16);
+  --glass-border-subtle: rgba(142, 203, 220, 0.08);
+  --glass-shadow: 0 10px 34px rgba(0, 7, 15, 0.28), inset 0 1px 0 rgba(189, 226, 240, 0.06);
+  --glass-shadow-hover: 0 18px 44px rgba(0, 7, 15, 0.40), inset 0 1px 0 rgba(189, 226, 240, 0.10);
+
+  /* 卡片专属深色语义色 */
+  --type-problem-fg: #70b0ff;
+  --type-problem-bg: rgba(64, 140, 255, 0.12);
+  --type-problem-border: rgba(64, 140, 255, 0.30);
+  --type-problem-badge: #70b0ff;
+
+  --type-process-fg: #7ad9df;
+  --type-process-bg: rgba(122, 217, 223, 0.12);
+  --type-process-border: rgba(122, 217, 223, 0.30);
+  --type-process-badge: #7ad9df;
+
+  --type-keystep-fg: #ffc470;
+  --type-keystep-bg: rgba(255, 180, 70, 0.12);
+  --type-keystep-border: rgba(255, 180, 70, 0.35);
+  --type-keystep-badge: #ffc470;
+
+  --type-figure-fg: #c4a0ff;
+  --type-figure-bg: rgba(170, 120, 255, 0.12);
+  --type-figure-border: rgba(170, 120, 255, 0.30);
+  --type-figure-badge: #c4a0ff;
+
+  --type-thought-fg: #9ed8c5;
+  --type-thought-bg: rgba(158, 216, 197, 0.12);
+  --type-thought-border: rgba(158, 216, 197, 0.30);
+  --type-thought-badge: #9ed8c5;
+
+  --type-article-fg: #b0c5d5;
+  --type-article-bg: rgba(176, 197, 213, 0.12);
+  --type-article-border: rgba(176, 197, 213, 0.30);
+  --type-article-badge: #b0c5d5;
+
+  /* 历史兼容映射 */
+  --bg-app: var(--md-surface);
+  --bg-stage: var(--md-surface-dim);
+  --bg-surface: var(--glass-surface);
+  --bg-surface-elevated: var(--glass-surface-elevated);
+  --ink-primary: var(--md-on-surface);
+  --ink-secondary: var(--md-on-surface-variant);
+  --ink-border: var(--md-outline-variant);
+  --primary-accent: var(--md-primary);
+}
+
+/* 主题颜色平滑过渡 */
+html.theme-anim,
+html.theme-anim * {
+  transition: background-color 220ms var(--ease-standard),
+              border-color 220ms var(--ease-standard),
+              color 220ms var(--ease-standard) !important;
+}

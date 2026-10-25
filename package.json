@@ -1,0 +1,27 @@
+{
+  "name": "paper-card-atelier",
+  "productName": "PaperCard Atelier · 纸质笔记重新构建工作台",
+  "version": "1.0.0",
+  "description": "本地原生桌面版（Electron app:// + Preload IPC 架构）纸质手写笔记识别、拆分、题解归属与自由画布重构工作台",
+  "private": false,
+  "type": "commonjs",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node scripts/launch-desktop.js",
+    "build:desktop": "node scripts/build-desktop.js",
+    "build:dist": "node scripts/build-dist-packages.js",
+    "verify:desktop": "node scripts/run-desktop-scenario.js",
+    "task": "node src/cli/noteTasks.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kelai061/notebook-manage.git"
+  },
+  "author": "kelai <kelai061@qq.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kelai061/notebook-manage/issues"
+  },
+  "homepage": "https://github.com/kelai061/notebook-manage#readme"
+}
